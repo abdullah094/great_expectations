@@ -40,6 +40,9 @@ from great_expectations.datasource.fluent.bigquery_datasource import (
 from great_expectations.datasource.fluent.citus_datasource import (
     CitusDatasource,
 )
+from great_expectations.datasource.fluent.exasol_datasource import (
+    ExasolDatasource,
+)
 from great_expectations.datasource.fluent.pandas_datasource import (
     PandasDatasource,
     _PandasDatasource,

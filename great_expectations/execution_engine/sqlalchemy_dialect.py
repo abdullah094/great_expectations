@@ -16,6 +16,7 @@ class GXSqlDialect(Enum):
     BIGQUERY = "bigquery"
     DATABRICKS = "databricks"
     DREMIO = "dremio"
+    EXASOL = "exasol"
     HIVE = "hive"
     SQL_SERVER = "mssql"
     MYSQL = "mysql"
@@ -66,6 +67,7 @@ class GXSqlDialect(Enum):
 
 DIALECT_IDENTIFIER_QUOTE_STRINGS: Final[Mapping[GXSqlDialect, tuple[str, str]]] = {
     GXSqlDialect.DATABRICKS: ("`", "`"),
+    GXSqlDialect.EXASOL: ('"', '"'),
     GXSqlDialect.SQL_SERVER: ("[", "]"),
     GXSqlDialect.MYSQL: ("`", "`"),
     GXSqlDialect.POSTGRESQL: ('"', '"'),

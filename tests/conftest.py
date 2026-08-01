@@ -123,6 +123,7 @@ REQUIRED_MARKERS: Final[set[str]] = {
     "cloud",
     "databricks",
     "docs",
+    "exasol",
     "filesystem",
     "gcs_deps",
     "generic_sql",
@@ -270,6 +271,16 @@ def pytest_addoption(parser):
         "--snowflake",
         action="store_true",
         help="If set, execute tests against snowflake",
+    )
+    parser.addoption(
+        "--exasol",
+        action="store_true",
+        help="If set, execute tests against exasol",
+    )
+    parser.addoption(
+        "--no-exasol",
+        action="store_true",
+        help="If set, suppress tests against exasol",
     )
     parser.addoption(
         "--clickhouse",
@@ -438,6 +449,7 @@ def pytest_collection_modifyitems(config, items):
             reason="need --docs-tests option to run",
         ),
         Category(mark="cloud", flag="--cloud", reason="need --cloud option to run"),
+        Category(mark="exasol", flag="--exasol", reason="need --exasol option to run"),
     )
 
     for category in categories:

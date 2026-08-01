@@ -1,0 +1,19 @@
+# Local Exasol instance for the `exasol` marker tests.
+#
+# Exasol's single-node docker-db requires `privileged: true`. It ships with the
+# default `sys`/`exasol` credentials and a self-signed TLS certificate, so live
+# tests must trust the certificate via the `fingerprint` connection detail
+# (see tests/datasource/fluent/test_exasol_datasource.py). The host port 9563
+# mirrors the connection spike.
+services:
+  exasol-db:
+    image: exasol/docker-db:latest
+    privileged: true
+    ports:
+      - "127.0.0.1:9563:8563"
+    healthcheck:
+      test: ["CMD-SHELL", "exaplus -c localhost:8563 -u sys -p exasol -sql 'SELECT 1;' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 40
+      start_period: 120s

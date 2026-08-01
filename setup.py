@@ -72,6 +72,7 @@ def get_extras_require():
         "snowflake",  # https://github.com/snowflakedb/snowflake-sqlalchemy/blob/main/setup.cfg
         "redshift",  # https://github.com/sqlalchemy-redshift/sqlalchemy-redshift/blob/main/setup.py
         "gx-redshift",  # deprecated alias for "redshift"
+        "exasol",  # https://github.com/exasol/sqlalchemy-exasol/blob/master/pyproject.toml
     )
     ignore_keys = (
         "sqlalchemy",

@@ -715,6 +715,75 @@ jobs:
         env:
           SHARD: ${{ matrix.shard }}
 
+  marker-tests-exasol:
+    needs: [unit-tests, static-analysis, check-actor-permissions]
+    if: github.event.pull_request.draft == false
+    # Community-supported tier: Exasol runs in its own marker-test job and is not
+    # part of the core SQL CI matrix (PostgreSQL/SQLite/MSSQL/BigQuery).
+    env:
+      GX_PYTHON_EXPERIMENTAL: true # allow for python 3.13+
+    permissions:
+      id-token: write
+      contents: read
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        exclude:
+          - python-version: ${{ github.event_name == 'pull_request_target' && '3.10' }}
+          - python-version: ${{ github.event_name == 'pull_request_target' && '3.11' }}
+          - python-version: ${{ github.event_name == 'pull_request_target' && '3.12' }}
+          - python-version: ${{ github.event_name == 'merge_group' && '3.10' }}
+          - python-version: ${{ github.event_name == 'merge_group' && '3.11' }}
+          - python-version: ${{ github.event_name == 'merge_group' && '3.12' }}
+          - python-version: ${{ github.event_name == 'workflow_dispatch' && '3.10' }}
+          - python-version: ${{ github.event_name == 'workflow_dispatch' && '3.11' }}
+          - python-version: ${{ github.event_name == 'workflow_dispatch' && '3.12' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Upgrade Docker Compose
+        uses: docker/setup-compose-action@v1
+        with:
+          version: latest
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+          cache-dependency-path: |
+            reqs/requirements-dev-test.txt
+            setup.py
+
+      - name: Install dependencies
+        run: |
+          pip install -c constraints-dev.txt -e ".[test,exasol]"
+
+      - name: Start Exasol container
+        run: |
+          docker compose -f assets/docker/exasol/docker-compose.yml up -d --wait --wait-timeout 600
+
+      - name: Capture self-signed certificate fingerprint
+        # The docker-db generates a fresh self-signed certificate on each start.
+        # The live tests trust it via the `fingerprint` connection detail, read
+        # from EXASOL_FINGERPRINT. Exasol's FINGERPRINT is the SHA-256 of the
+        # server certificate as uppercase hex without separators.
+        run: |
+          FINGERPRINT=$(echo | openssl s_client -connect 127.0.0.1:9563 2>/dev/null \
+            | openssl x509 -noout -fingerprint -sha256 \
+            | sed 's/.*=//; s/://g')
+          echo "EXASOL_FINGERPRINT=${FINGERPRINT}" >> "$GITHUB_ENV"
+
+      - name: Run the tests
+        run: |
+          pytest --exasol -m exasol tests/datasource/fluent/test_exasol_datasource.py -v
+
   redshift:
     needs: [unit-tests, static-analysis, check-actor-permissions]
     if: github.event.pull_request.draft == false
@@ -976,6 +1045,7 @@ jobs:
       - integration-tests
       - marker-tests
       - marker-tests-snowflake
+      - marker-tests-exasol
       - redshift
       - py310-min-versions
       - py311-min-versions
@@ -1020,6 +1090,7 @@ jobs:
         integration-tests,
         marker-tests,
         marker-tests-snowflake,
+        marker-tests-exasol,
         py310-min-versions,
         py311-min-versions,
         py312-min-versions,
@@ -1071,6 +1142,7 @@ jobs:
         integration-tests,
         marker-tests,
         marker-tests-snowflake,
+        marker-tests-exasol,
         py310-min-versions,
         py311-min-versions,
         py312-min-versions,

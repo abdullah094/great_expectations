@@ -161,5 +161,10 @@ tests/integration/cloud/rest_contracts/pacts
 # cursor
 .cursor/
 
+# AI agent tooling
+.claude/
+.serena/
+openspec/
+
 # mise
 mise.toml

@@ -380,10 +380,17 @@ def get_snowflake_private_key() -> Optional[str]:
 def _engine_kwargs_for(connection_string: str) -> dict:
     """Per-dialect extras to forward to ``sa.create_engine`` based on the URL.
 
-    Currently only Snowflake needs special handling (key-pair auth via connect_args).
+    - Snowflake needs special handling (key-pair auth via connect_args).
+    - Exasol uses ``NullPool`` so connections are disposed eagerly; this avoids
+      a cosmetic ``ssl.SSLError`` raised by pyexasol's ``do_close()`` when a
+      pooled connection is collected at interpreter exit.
     """
     if connection_string.startswith("snowflake://"):
         return get_snowflake_connection_kwargs()
+    if connection_string.startswith("exa+websocket://"):
+        from sqlalchemy.pool import NullPool
+
+        return {"poolclass": NullPool}
     return {}
 
 
@@ -404,6 +411,31 @@ def get_snowflake_connection_kwargs() -> dict:
     if sf_private_key:
         return {"connect_args": {"private_key": sf_private_key}}
     return {}
+
+
+def get_exasol_connection_url() -> str:
+    """Get an Exasol ``exa+websocket`` connection url from environment variables.
+
+    Falls back to the local ``exasol/docker-db`` defaults (sys/exasol on
+    127.0.0.1:8563). ``EXASOL_FINGERPRINT`` trusts a self-signed certificate;
+    ``EXASOL_SCHEMA`` selects a default schema.
+
+    Returns:
+        String of the Exasol connection URL.
+    """
+    host = os.environ.get("EXASOL_HOST", "127.0.0.1")
+    port = os.environ.get("EXASOL_PORT", "8563")
+    user = os.environ.get("EXASOL_USERNAME", "sys")
+    pswd = os.environ.get("EXASOL_PASSWORD", "exasol")
+    schema = os.environ.get("EXASOL_SCHEMA")
+    fingerprint = os.environ.get("EXASOL_FINGERPRINT")
+
+    url = f"exa+websocket://{user}:{pswd}@{host}:{port}"
+    if schema:
+        url = f"{url}/{schema}"
+    if fingerprint:
+        url = f"{url}?FINGERPRINT={fingerprint}"
+    return url
 
 
 def get_redshift_connection_url() -> str:
