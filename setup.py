@@ -86,6 +86,14 @@ def get_extras_require():
         # so it is not yet something to offer users. Move this key into `sqla_keys` to
         # publish the extra.
         "oracle",
+        # Test-only for now. The extras map is derived by globbing this directory, so a
+        # requirements file is enough on its own to publish `pip install
+        # 'great_expectations[exasol]'` as a supported install path. The driver
+        # (https://github.com/exasol/sqlalchemy-exasol) is installed here for the curated
+        # CI lane, but that suite passes only with a `regex_match` exclusion, so the extra
+        # would promise coverage that is not yet complete. Move this key into `sqla_keys`
+        # to publish the extra.
+        "exasol",
     )
 
     requirements_dir = "reqs"
