@@ -10,6 +10,7 @@ from .base import DataSourceTestConfig
 from .big_query import BigQueryDatasourceTestConfig
 from .clickhouse import ClickHouseDatasourceTestConfig
 from .databricks import DatabricksDatasourceTestConfig
+from .exasol import ExasolDatasourceTestConfig
 from .generic_sql import GenericSQLDatasourceTestConfig
 from .mysql import MySQLDatasourceTestConfig
 from .oracle import OracleDatasourceTestConfig
