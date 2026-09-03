@@ -90,9 +90,9 @@ def get_extras_require():
         # requirements file is enough on its own to publish `pip install
         # 'great_expectations[exasol]'` as a supported install path. The driver
         # (https://github.com/exasol/sqlalchemy-exasol) is installed here for the curated
-        # CI lane, but that suite passes only with a `regex_match` exclusion, so the extra
-        # would promise coverage that is not yet complete. Move this key into `sqla_keys`
-        # to publish the extra.
+        # CI lane; publishing the install path and adding its row to the SQL dialect
+        # installation-commands table are one user-facing change, and the follow-up PR
+        # makes them together. Move this key into `sqla_keys` to publish the extra.
         "exasol",
     )
 

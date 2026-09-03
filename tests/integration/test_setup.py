@@ -115,11 +115,11 @@ class TestSetupIntegration:
         `get_extras_require` derives the extras map by globbing `reqs/`, so
         `requirements-dev-exasol.txt` — which exists so the curated Exasol test lane
         can install a driver — is on its own enough to publish
-        `pip install 'great_expectations[exasol]'`. The curated suite passes only
-        with a `regex_match` exclusion, so that install path would promise coverage
-        the dialect does not yet fully deliver. The key is held in `ignore_keys`
-        until it does, and this is what keeps the hold from being reverted by
-        accident.
+        `pip install 'great_expectations[exasol]'`. Publishing that install path and
+        adding its row to the SQL dialect installation-commands table are one
+        user-facing change, and the follow-up PR makes them together; until then the
+        key is held in `ignore_keys`, and this is what keeps the hold from being
+        reverted by accident.
         """
         original_cwd = Path.cwd()
         try:

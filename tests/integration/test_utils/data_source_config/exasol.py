@@ -98,22 +98,6 @@ class ExasolDatasourceTestConfig(SqlDatasourceTestConfig):
         container_service="exasol",
         tiers=frozenset({SupportTier.CURATED_SQL, SupportTier.FLUENT_API}),
         tier_case_exclusions={
-            # Core's dialect-regex helper (`get_dialect_regex_expression`) has no branch for
-            # Exasol -- it dispatches on PostgreSQL, Databricks, Redshift, MySQL, Snowflake,
-            # BigQuery, Trino, ClickHouse, Dremio, Teradata, and SQLite, and falls through to
-            # returning `None` for any unmatched dialect. Exasol does have regex matching, but
-            # not in a shape any existing branch emits: `REGEXP_LIKE` here is an infix predicate
-            # (`<expr> REGEXP_LIKE <pattern>`), not the scalar `regexp_like(column, pattern)`
-            # call the Trino, ClickHouse, and Databricks branches build -- calling it as a
-            # function fails with `syntax error, unexpected REGEXP_LIKE_`. So no regex-based
-            # case can execute against this dialect.
-            "regex_match": (
-                "Exasol has no branch in core's dialect-regex helper "
-                "(get_dialect_regex_expression), which falls through to returning None for any "
-                "unmatched dialect; Exasol's REGEXP_LIKE is an infix predicate rather than the "
-                "scalar regexp_like(column, pattern) call the existing branches emit, so no "
-                "regex-based case can execute against this dialect."
-            ),
             # A driver defect, not a dialect gap -- the same category as ClickHouse's
             # `quoted_identifiers` entry. sqlalchemy-exasol 7.1.3's `EXACompiler.extract_map`
             # maps `year`, `month` and `day` to the strftime tokens `%Y`, `%m` and `%d`, so

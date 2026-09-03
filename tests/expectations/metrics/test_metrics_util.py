@@ -1556,3 +1556,76 @@ def test_get_dialect_regex_expression_resolves_oracle_regex_list_not_match_famil
     assert str(compound_condition.compile(compile_kwargs={"literal_binds": True})) == (
         "NOT regexp_like(a, 'foo') AND NOT regexp_like(a, 'bar')"
     )
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "positive,expected_sql",
+    [
+        pytest.param(True, "a REGEXP_LIKE 'test'", id="positive"),
+        # Unlike Oracle, the negated form is its own operator token, not `sa.not_()` over
+        # the positive one: the branch emits `NOT REGEXP_LIKE` the way the MySQL branch
+        # emits `NOT REGEXP`. How `sa.not_()` over the positive form renders is pinned
+        # separately below, because one aggregate caller relies on that instead.
+        pytest.param(False, "a NOT REGEXP_LIKE 'test'", id="negative"),
+    ],
+)
+def test_get_dialect_regex_expression_renders_exasol_native_predicate(
+    positive: bool, expected_sql: str
+) -> None:
+    """`get_dialect_regex_expression`'s chain has an Exasol entry, detected by the
+    dialect instance's `name` rather than by `issubclass` or `hasattr`: the execution
+    engine sets no dialect module for Exasol, so every caller hands the helper the
+    live dialect instance (an `EXADialect_websocket`, whose `name` is `"exasol"`),
+    and there is no Exasol class in core to test against. The stub carries only that
+    attribute, which is exactly what the instance offers the chain.
+
+    Exasol's `REGEXP_LIKE` is an infix predicate (`<expr> [NOT] REGEXP_LIKE
+    <pattern>`); the function form is a parse error on the server. So the branch
+    renders the MySQL `custom_op` shape with Exasol's operator tokens.
+    """
+    stub = _DialectDetectionStub(name="exasol")
+    column = sa.column("a")
+
+    result = get_dialect_regex_expression(
+        column=column, regex="test", dialect=stub, positive=positive
+    )
+
+    assert result is not None
+    rendered = str(result.compile(compile_kwargs={"literal_binds": True}))
+    assert rendered == expected_sql
+
+
+@pytest.mark.unit
+def test_get_dialect_regex_expression_resolves_exasol_aggregate_family() -> None:
+    """Covers the aggregate family for Exasol -- the same two modules the Oracle
+    aggregate test above names.
+
+    The "not match" module wraps the helper's *positive* result in `sa.not_()` in
+    Python. For Oracle that wraps a function call and renders as `NOT regexp_like(...)`;
+    for Exasol it wraps an infix `custom_op` expression, which SQLAlchemy renders by
+    parenthesising the predicate -- `NOT (a REGEXP_LIKE 'test')` -- rather than by
+    switching to the `NOT REGEXP_LIKE` operator the row-level negative form uses. That
+    is a different rendering path from the one pinned above, so it is pinned here. The
+    same shape was executed against a live Exasol 2026.2.0-nano.3 while this test was
+    written and the server accepts it.
+    """
+    stub = _DialectDetectionStub(name="exasol")
+    column = sa.column("a")
+
+    regex_expression = get_dialect_regex_expression(column=column, regex="test", dialect=stub)
+    assert regex_expression is not None, (
+        "aggregate family: get_dialect_regex_expression returned None for Exasol -- "
+        "column_values_match_regex_values.py and column_values_not_match_regex_values.py "
+        "would raise NotImplementedError before building a query"
+    )
+
+    match_query = sa.select(column).where(regex_expression)
+    assert str(match_query.compile(compile_kwargs={"literal_binds": True})) == (
+        "SELECT a \nWHERE a REGEXP_LIKE 'test'"
+    )
+
+    not_match_query = sa.select(column).where(sa.not_(regex_expression))
+    assert str(not_match_query.compile(compile_kwargs={"literal_binds": True})) == (
+        "SELECT a \nWHERE NOT (a REGEXP_LIKE 'test')"
+    )
