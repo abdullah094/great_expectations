@@ -9,24 +9,28 @@ from great_expectations.compatibility.typing_extensions import override
 from great_expectations.data_context import AbstractDataContext
 from great_expectations.datasource.fluent.sql_datasource import TableAsset
 from tests.integration.sql_session_manager import SessionSQLEngineManager
-from tests.integration.test_utils.data_source_config.backend_spec import (
-    BackendProvisioning,
-    BackendTier,
-    CiLaneRef,
-    SqlBackendSpec,
-)
+from tests.integration.test_utils.data_source_config.backend_spec import SqlBackendSpec
 from tests.integration.test_utils.data_source_config.base import BatchTestSetup
-from tests.integration.test_utils.data_source_config.registry import register_sql_backend
+from tests.integration.test_utils.data_source_config.data_source_spec import (
+    CiLaneRef,
+    DataSourceProvisioning,
+    ExecutionEngineKind,
+    SupportTier,
+)
+from tests.integration.test_utils.data_source_config.registry import register_sql_config
 from tests.integration.test_utils.data_source_config.sql import SQLBatchTestSetup
 from tests.integration.test_utils.data_source_config.sql_config import SqlDatasourceTestConfig
 
 
-@register_sql_backend
+@register_sql_config
 class ExasolDatasourceTestConfig(SqlDatasourceTestConfig):
-    BACKEND_SPEC = SqlBackendSpec(
+    DATA_SOURCE_SPEC = SqlBackendSpec(
         label="exasol",
+        public_name="Exasol",
         marker="exasol",
-        provisioning=BackendProvisioning.LOCAL_CONTAINER,
+        provisioning=DataSourceProvisioning.LOCAL_CONTAINER,
+        execution_engine=ExecutionEngineKind.SQL,
+        fluent_types=frozenset({"sql"}),
         ci_lane=CiLaneRef(workflow_job="marker-tests", marker_token="exasol"),
         # Unlike Oracle (where a schema is a user), SingleStore, and ClickHouse, Exasol has
         # first-class schemas: `CREATE SCHEMA` and `DROP SCHEMA` are plain supported DDL, so the
@@ -92,7 +96,7 @@ class ExasolDatasourceTestConfig(SqlDatasourceTestConfig):
         dev_requirements_file="reqs/requirements-dev-exasol.txt",
         task_runner_marker="exasol",
         container_service="exasol",
-        tiers=frozenset({BackendTier.CURATED_SQL}),
+        tiers=frozenset({SupportTier.CURATED_SQL, SupportTier.FLUENT_API}),
         tier_case_exclusions={
             # Core's dialect-regex helper (`get_dialect_regex_expression`) has no branch for
             # Exasol -- it dispatches on PostgreSQL, Databricks, Redshift, MySQL, Snowflake,
@@ -109,6 +113,22 @@ class ExasolDatasourceTestConfig(SqlDatasourceTestConfig):
                 "unmatched dialect; Exasol's REGEXP_LIKE is an infix predicate rather than the "
                 "scalar regexp_like(column, pattern) call the existing branches emit, so no "
                 "regex-based case can execute against this dialect."
+            ),
+            # A driver defect, not a dialect gap -- the same category as ClickHouse's
+            # `quoted_identifiers` entry. sqlalchemy-exasol 7.1.3's `EXACompiler.extract_map`
+            # maps `year`, `month` and `day` to the strftime tokens `%Y`, `%m` and `%d`, so
+            # SQLAlchemy's generic `visit_extract` renders the date partitioner's
+            # `sa.func.extract("year", col)` as `EXTRACT(%Y FROM col)`, which the server rejects
+            # with `syntax error, unexpected invalid token`. The server itself accepts
+            # `EXTRACT(YEAR FROM col)` (verified live), so the fix belongs in the driver's
+            # compiler, not in this harness and not in core. An issue still needs to be filed
+            # for this defect; this reason will be updated with its link once one exists.
+            "batch_definition": (
+                "sqlalchemy-exasol 7.1.3 compiles every EXTRACT as `EXTRACT(%Y FROM col)` -- its "
+                "compiler's extract_map holds strftime tokens -- so the date partitioner's query "
+                "is rejected with `syntax error, unexpected invalid token`. The server accepts "
+                "`EXTRACT(YEAR FROM col)`, so this is a driver defect. An issue still needs to be "
+                "filed for this defect."
             ),
         },
     )
