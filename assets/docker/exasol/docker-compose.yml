@@ -9,6 +9,19 @@ services:
     # to a different server build. This digest is Exasol 2026.2.0-nano.3 (read out of the
     # running container's own startup banner).
     image: exasol/nano@sha256:45993493060711ee600f7dbcaecb80fbb0a3c262d3a0efc43491762d71c45c07
+    # Both of the next two values are carried over verbatim from the compose file Exasol
+    # publishes for nano, rather than tuned here, and the ten curated cases pass without either:
+    # this dataset is nowhere near large enough to reach Docker's defaults. They are here to match
+    # the vendor's documented configuration, not to fix an observed failure.
+    #
+    # `shm_size` does take effect -- it raises `/dev/shm` from Docker's 64 MB default to 512 MB,
+    # where the database places its shared memory segments (verified: `HostConfig.ShmSize` reads
+    # 536870912 with this line and 67108864 without it). `pids_limit: -1` means "no cap", which is
+    # already the daemon default, so on a stock runner it is declarative -- `HostConfig.PidsLimit`
+    # is unset either way. It earns its place only on a daemon configured with a default pids
+    # ceiling, where the server's process-per-service model could otherwise hit it.
+    shm_size: 512mb
+    pids_limit: -1
     # No `privileged`, no `ulimits`, no volumes: nano needs none of them, and leaving out a
     # volume means every run starts from the image's own freshly initialized database.
     ports:
