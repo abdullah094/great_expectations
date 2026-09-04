@@ -84,7 +84,7 @@ _RESOLVED: Mapping[str, Mapping[str, str]] = {
         "datetime": "Nullable(DateTime64(3))",
     },
     "databricks": {"dialect": "databricks", "float": "DOUBLE", "datetime": "TIMESTAMP_NTZ"},
-    "exasol": {"dialect": "exa", "float": "DOUBLE PRECISION", "datetime": "TIMESTAMP"},
+    "exasol": {"dialect": "exa", "float": "FLOAT", "datetime": "TIMESTAMP"},
     "mssql": {"dialect": "mssql", "float": "FLOAT(53)", "datetime": "DATETIME"},
     "mysql": {"dialect": "mysql", "float": "FLOAT(53)", "datetime": "DATETIME"},
     "oracle": {"dialect": "oracle", "float": "DECIMAL(38, 10)", "datetime": "TIMESTAMP"},

@@ -1598,26 +1598,31 @@ def test_get_dialect_regex_expression_renders_exasol_native_predicate(
 
 @pytest.mark.unit
 def test_get_dialect_regex_expression_resolves_exasol_aggregate_family() -> None:
-    """Covers the aggregate family for Exasol -- the same two modules the Oracle
-    aggregate test above names.
+    """Pins how `sa.not_()` renders over the Exasol branch's infix expression.
 
-    The "not match" module wraps the helper's *positive* result in `sa.not_()` in
-    Python. For Oracle that wraps a function call and renders as `NOT regexp_like(...)`;
-    for Exasol it wraps an infix `custom_op` expression, which SQLAlchemy renders by
-    parenthesising the predicate -- `NOT (a REGEXP_LIKE 'test')` -- rather than by
-    switching to the `NOT REGEXP_LIKE` operator the row-level negative form uses. That
-    is a different rendering path from the one pinned above, so it is pinned here. The
-    same shape was executed against a live Exasol 2026.2.0-nano.3 while this test was
-    written and the server accepts it.
+    The branch returns a `custom_op` binary expression, so `sa.not_()` over the positive
+    form parenthesises the predicate -- `NOT (a REGEXP_LIKE 'test')` -- rather than
+    switching to the `NOT REGEXP_LIKE` operator token that the row-level negative form
+    uses and that the test above pins. That is a second rendering path through the same
+    branch, so it is pinned separately. The shape was executed against a live Exasol
+    2026.2.0-nano.3 while this test was written and the server accepts it.
+
+    It does not establish that the two aggregate modules the Oracle test above names --
+    `column_values_match_regex_values.py` and `column_values_not_match_regex_values.py` --
+    work on Exasol. They cannot: each opens with `assert execution_engine.dialect_module
+    is not None` at line 33, and `SqlAlchemyExecutionEngine` resolves no dialect module
+    for Exasol, so on this backend both raise `AssertionError` before reaching the helper.
+    That assertion is a pre-existing gap for every dialect the engine leaves module-less,
+    not an Exasol one, and closing it is out of scope here. The SQL pinned below is what
+    those two modules would emit once it is closed.
     """
     stub = _DialectDetectionStub(name="exasol")
     column = sa.column("a")
 
     regex_expression = get_dialect_regex_expression(column=column, regex="test", dialect=stub)
     assert regex_expression is not None, (
-        "aggregate family: get_dialect_regex_expression returned None for Exasol -- "
-        "column_values_match_regex_values.py and column_values_not_match_regex_values.py "
-        "would raise NotImplementedError before building a query"
+        "get_dialect_regex_expression returned None for Exasol -- the branch is gone or is "
+        "no longer detected by dialect name, and the sa.not_() rendering below cannot be pinned"
     )
 
     match_query = sa.select(column).where(regex_expression)

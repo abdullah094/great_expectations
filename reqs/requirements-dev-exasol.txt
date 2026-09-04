@@ -1,1 +1,1 @@
-sqlalchemy-exasol>=7.1.2
+sqlalchemy-exasol>=7.1.3
