@@ -283,7 +283,7 @@ two fluent types.
 
 The public compatibility reference at
 [`docs/docusaurus/docs/help/compatibility_reference.md`](../../../docs/docusaurus/docs/help/compatibility_reference.md)
-lists eighteen data sources in the "Data sources" row of its support table. Every one of them
+lists nineteen data sources in the "Data sources" row of its support table. Every one of them
 resolves to a registered record. Four registered data sources are absent from that list, and two
 more resolve only by reading past a spelling difference. Both kinds are recorded here so that the
 effort which regenerates that page sees them rather than rediscovering them.

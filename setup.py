@@ -62,6 +62,7 @@ def get_extras_require():
         "athena",  # https://github.com/laughingman7743/PyAthena/blob/master/pyproject.toml
         "bigquery",  # https://github.com/googleapis/python-bigquery-sqlalchemy/blob/main/setup.py
         "dremio",  # https://github.com/narendrans/sqlalchemy_dremio/blob/master/setup.py
+        "exasol",  # https://github.com/exasol/sqlalchemy-exasol
         "hive",  # https://github.com/dropbox/PyHive/blob/master/setup.py
         "sql-server",  # https://github.com/mkleehammer/pyodbc/blob/master/setup.py
         "mysql",  # https://github.com/PyMySQL/PyMySQL/blob/main/pyproject.toml
@@ -86,14 +87,6 @@ def get_extras_require():
         # so it is not yet something to offer users. Move this key into `sqla_keys` to
         # publish the extra.
         "oracle",
-        # Test-only for now. The extras map is derived by globbing this directory, so a
-        # requirements file is enough on its own to publish `pip install
-        # 'great_expectations[exasol]'` as a supported install path. The driver
-        # (https://github.com/exasol/sqlalchemy-exasol) is installed here for the curated
-        # CI lane; publishing the install path and adding its row to the SQL dialect
-        # installation-commands table are one user-facing change, and the follow-up PR
-        # makes them together. Move this key into `sqla_keys` to publish the extra.
-        "exasol",
     )
 
     requirements_dir = "reqs"
